@@ -1315,6 +1315,8 @@ def compute_checksums(fs_access: StdFsAccess, fileobj: CWLObjectType) -> None:
     if "checksum" not in fileobj:
         checksum = hashlib.sha1()  # nosec
         location = cast(str, fileobj["location"])
+        if not fs_access.isfile(location):
+            return
         with fs_access.open(location, "rb") as f:
             contents = f.read(1024 * 1024)
             while contents != b"":

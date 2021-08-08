@@ -336,8 +336,10 @@ def check_valid_locations(fs_access: StdFsAccess, ob: CWLObjectType) -> None:
     location = cast(str, ob["location"])
     if location.startswith("_:"):
         pass
-    if ob["class"] == "File" and not fs_access.isfile(location):
+    if ob["class"] == "File" and not fs_access.exists(location) or fs_access.isdir(location):
         raise ValidationException("Does not exist or is not a File: '%s'" % location)
+    # if ob["class"] == "File" and not fs_access.isfile(location):
+    #     raise ValidationException("Does not exist or is not a File: '%s'" % location)
     if ob["class"] == "Directory" and not fs_access.isdir(location):
         raise ValidationException(
             "Does not exist or is not a Directory: '%s'" % location
@@ -1192,10 +1194,10 @@ class CommandLineTool(Process):
                                         "nameext": os.path.splitext(
                                             os.path.basename(g)
                                         )[1],
-                                        "class": "File"
-                                        if fs_access.isfile(g)
-                                        else "Directory",
-                                    }
+                                        "class": "Directory"
+                                        if fs_access.isdir(g)
+                                        else "File"
+                            }
                                     for g in sorted(
                                         fs_access.glob(fs_access.join(outdir, gb)),
                                         key=cmp_to_key(
@@ -1230,7 +1232,7 @@ class CommandLineTool(Process):
                                 files["contents"] = content_limit_respected_read_bytes(
                                     f
                                 ).decode("utf-8")
-                        if compute_checksum:
+                        if compute_checksum and fs_access.isfile(rfile["location"]):
                             with fs_access.open(
                                 cast(str, rfile["location"]), "rb"
                             ) as f:

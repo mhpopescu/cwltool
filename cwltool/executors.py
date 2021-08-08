@@ -98,10 +98,11 @@ class JobExecutor(metaclass=ABCMeta):
         original_outdir = runtime_context.outdir
         if isinstance(original_outdir, str):
             finaloutdir = os.path.abspath(original_outdir)
-        runtime_context = runtime_context.copy()
-        outdir = runtime_context.create_outdir()
-        self.output_dirs.add(outdir)
-        runtime_context.outdir = outdir
+        if not runtime_context.streaming_allowed:
+            runtime_context = runtime_context.copy()
+            outdir = runtime_context.create_outdir()
+            self.output_dirs.add(outdir)
+            runtime_context.outdir = outdir
         runtime_context.mutation_manager = MutationManager()
         runtime_context.toplevel = True
         runtime_context.workflow_eval_lock = threading.Condition(threading.RLock())
@@ -151,6 +152,7 @@ class JobExecutor(metaclass=ABCMeta):
             self.final_output
             and self.final_output[0] is not None
             and finaloutdir is not None
+            and not runtime_context.streaming_allowed
         ):
             self.final_output[0] = relocateOutputs(
                 self.final_output[0],
